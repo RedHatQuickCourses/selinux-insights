@@ -1,5 +1,5 @@
-name: REPLACEREPONAME
-title: FIXME Course Title
+name: selinux-insights
+title: SELinux supplemental training
 version: 1
 nav:
 - modules/ROOT/nav.adoc
