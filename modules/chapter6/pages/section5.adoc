@@ -1,0 +1,3 @@
+== Conclusion
+
+In this chapter you have been imbued with the knowledge and skills to manage SELinux in OpenShift 4.x. By leveraging the SPO, users can create and bind custom profiles, monitor violations, and troubleshoot issues, adapting RHEL practices to Kubernetes. 

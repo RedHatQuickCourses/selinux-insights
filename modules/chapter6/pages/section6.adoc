@@ -1,0 +1,12 @@
+== Bibliography
+
+1. "Security-Enhanced Linux," Wikipedia, https://en.wikipedia.org/wiki/Security-Enhanced_Linux
+2. "What is SELinux?," Red Hat, https://www.redhat.com/en/topics/linux/what-is-selinux
+3. "OpenShift Container Platform 4.x Documentation - Security Profiles Operator," Red Hat, https://docs.redhat.com/en/documentation/openshift_container_platform/4.x/html/security_and_compliance/security-profiles-operator
+4. "OpenShift Protects against Nasty Container Exploit," Red Hat Blog, https://www.redhat.com/en/blog/openshift-protects-against-nasty-container-exploit
+
+[appendix]
+== Additional Resources
+
+- Red Hat OpenShift 4.x Release Notes: https://docs.redhat.com/en/documentation/openshift_container_platform/4.x/html/release_notes/index
+- SELinux User's and Administrator's Guide: https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/8/html/using_selinux/index

@@ -1,0 +1,7 @@
+== Introduction to SELinux in OpenShift 4.x
+
+Security-Enhanced Linux (SELinux) is a mandatory access control (MAC) system integrated into the Linux kernel, widely used in RHEL to enforce fine-grained security policies. In OpenShift 4.x, a Kubernetes-based container platform by Red Hat, SELinux plays a critical role in securing containerized workloads, particularly in multi-tenant environments. This training bridges the gap for RHEL SELinux users, focusing on how SELinux is implemented and managed in OpenShift 4.x using the Security Profiles Operator (SPO).
+
+For RHEL users, SELinux in OpenShift will feel familiar but introduces container-specific nuances. OpenShift runs on Red Hat Enterprise Linux CoreOS (RHCOS), where SELinux is enabled by default in enforcing mode, leveraging type enforcement and Multi-Category Security (MCS) to isolate containers. The SPO extends RHEL's SELinux capabilities, allowing dynamic policy creation and binding to Kubernetes workloads.
+
+In OpenShift, SELinux builds on RHEL's implementation, adapting it for container orchestration. Since OpenShift 3.x, SELinux has been integral, with OpenShift 4.x refining its management through the SPO, introduced to streamline policy application in Kubernetes environments [1].

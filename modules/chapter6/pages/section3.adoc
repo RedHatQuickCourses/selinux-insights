@@ -1,0 +1,30 @@
+== Management Techniques
+
+Managing SELinux in OpenShift 4.x extends RHEL practices but shifts focus to Kubernetes constructs. Key techniques include:
+
+1. **Creating SELinux Profiles**: Use `SelinuxProfile` to define policies, similar to writing custom RHEL modules but scoped to namespaces. Policies must be validated by the SPO to ensure correctness.
+
+2. **Binding Profiles**: Apply profiles using `ProfileBinding`, linking them to pods via pod selectors. Namespaces must be labeled with `spo.x-k8s.io/enable-binding=true`. Example:
+[source,yaml]
+----
+apiVersion: security-profiles-operator.x-k8s.io/v1alpha1
+kind: ProfileBinding
+metadata:
+  name: nginx-binding
+  namespace: nginx-deploy
+spec:
+  profileRef:
+    kind: SelinuxProfile
+    name: nginx-secure
+  podSelector:
+    matchLabels:
+      app: nginx
+----
+
+3. **Monitoring and Logging**: Enable the SPO log enricher to capture AVC denials (`oc -n openshift-security-profiles patch spod spod --type=merge -p '{"spec":{"enableLogEnricher":true}}'`). Check logs with `oc exec -it <pod-name> -- journalctl -t setroubleshoot`, similar to RHEL's `ausearch -m avc`.
+
+4. **Troubleshooting**: Use permissive mode (`permissive: true` in `SelinuxProfile`) to log denials without enforcement, akin to `setenforce 0` on RHEL, but scoped to specific workloads. Adjust policies based on audit logs, avoiding overly permissive rules.
+
+5. **Profile Recording**: The `ProfileRecording` resource captures runtime behavior, generating profiles from logs, a feature not available in standard RHEL SELinux management.
+
+Key differences from RHEL include namespace-scoped policies, dynamic type assignment via `@self`, and integration with Kubernetes RBAC. RHEL users should note that OpenShift's SELinux policies are additive to the base RHCOS policy, not replacements, and require careful validation to avoid conflicts [3].

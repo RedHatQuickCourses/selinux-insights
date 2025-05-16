@@ -1,0 +1,164 @@
+== Practical Lab Exercises
+
+The following exercises provide hands-on experience with SELinux in OpenShift 4.x, building on RHEL SELinux knowledge. They assume access to an OpenShift 4.x cluster with cluster-admin privileges and the SPO installed.
+
+=== Exercise 1: Verify SELinux Configuration
+*Objective*: Confirm SELinux is in enforcing mode and understand its integration with OpenShift.
+
+1. List nodes: `oc get nodes`.
+2. Access a node: `oc debug node/<node-name>`.
+3. Check SELinux status: `getenforce` (should return `Enforcing`).
+4. Verify MCS labels: `oc describe pod <pod-name> -n <namespace>` and look for `seLinuxOptions` in the pod spec.
+5. Exit the debug session.
+
+*Expected Outcome*: Confirm SELinux is active and pods have MCS labels like `system_u:system_r:container_t:s0:cX,cY`.
+
+=== Exercise 2: Create and Apply a Custom SELinux Profile
+*Objective*: Create a namespace-scoped SELinux profile and bind it to an nginx deployment.
+
+1. Create a namespace: `oc create namespace selinux-lab`.
+2. Enable binding: `oc label namespace selinux-lab spo.x-k8s.io/enable-binding=true`.
+3. Create a profile (`http-server-profile.yaml`):
+[source,yaml]
+----
+apiVersion: security-profiles-operator.x-k8s.io/v1alpha1
+kind: SelinuxProfile
+metadata:
+  name: http-server
+  namespace: selinux-lab
+spec:
+  allow:
+    '@self':
+      tcp_socket:
+      - bind
+      - listen
+    http_port_t:
+      tcp_socket:
+      - name_bind
+  inherit:
+  - kind: System
+    name: container
+----
+4. Apply: `oc apply -f http-server-profile.yaml`.
+5. Deploy nginx:
+[source,yaml]
+----
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: http-server
+  namespace: selinux-lab
+spec:
+  selector:
+    matchLabels:
+      app: http-server
+  template:
+    metadata:
+      labels:
+        app: http-server
+    spec:
+      containers:
+      - name: nginx
+        image: nginx
+        ports:
+        - containerPort: 80
+----
+6. Create a binding (`http-server-binding.yaml`):
+[source,yaml]
+----
+apiVersion: security-profiles-operator.x-k8s.io/v1alpha1
+kind: ProfileBinding
+metadata:
+  name: http-server-binding
+  namespace: selinux-lab
+spec:
+  profileRef:
+    kind: SelinuxProfile
+    name: http-server
+  podSelector:
+    matchLabels:
+      app: http-server
+----
+7. Apply: `oc apply -f http-server-binding.yaml`.
+8. Verify pod status: `oc get pods -n selinux-lab`.
+9. Check SELinux context: `oc exec -it <pod-name> -n selinux-lab -- ps -Z`.
+
+*Expected Outcome*: Nginx pod runs with the custom SELinux profile, allowing TCP bind and listen operations.
+
+=== Exercise 3: Test Policy Violations
+*Objective*: Simulate a policy violation and analyze AVC denials.
+
+1. Create a restrictive profile (`restrictive-profile.yaml`):
+[source,yaml]
+----
+apiVersion: security-profiles-operator.x-k8s.io/v1alpha1
+kind: SelinuxProfile
+metadata:
+  name: restrictive-http
+  namespace: selinux-lab
+spec:
+  permissive: true
+  allow:
+    '@self':
+      file:
+      - read
+----
+2. Apply and bind to a new nginx deployment (modify the deployment name to `http-server-restrictive`).
+3. Attempt to start the pod and check status: `oc describe pod <pod-name> -n selinux-lab`.
+4. Check AVC denials: `oc exec -it <pod-name> -n selinux-lab -- journalctl -t setroubleshoot` or `oc -n openshift-security-profiles logs <spo-pod>`.
+5. Update the profile to allow necessary permissions (e.g., add `tcp_socket: [bind, listen]`) and reapply.
+
+*Expected Outcome*: Pod fails or logs denials due to missing permissions; updated profile resolves the issue.
+
+=== Exercise 4: Record SELinux Profiles
+*Objective*: Use `ProfileRecording` to generate a profile from runtime behavior.
+
+1. Enable log enricher: `oc -n openshift-security-profiles patch spod spod --type=merge -p '{"spec":{"enableLogEnricher":true}}'`.
+2. Label namespace: `oc label namespace selinux-lab spo.x-k8s.io/enable-recording=true`.
+3. Create a recording (`http-recording.yaml`):
+[source,yaml]
+----
+apiVersion: security-profiles-operator.x-k8s.io/v1alpha1
+kind: ProfileRecording
+metadata:
+  name: http-recording
+  namespace: selinux-lab
+spec:
+  kind: SelinuxProfile
+  recorder: logs
+  podSelector:
+    matchLabels:
+      app: http-server
+----
+4. Apply: `oc apply -f http-recording.yaml`.
+5. Run the nginx pod for a few minutes, then check the generated profile: `oc get selinuxprofile -n selinux-lab`.
+6. Review the profile for recorded permissions.
+
+*Expected Outcome*: A new `SelinuxProfile` is generated, capturing the nginx pod's SELinux requirements.
+
+=== Exercise 5: Manage Privileged Workloads
+*Objective*: Deploy a privileged pod and understand SELinux implications.
+
+1. Create a namespace: `oc create namespace privileged-lab`.
+2. Disable pod security sync: `oc label namespace privileged-lab security.openshift.io/scc.podSecurityLabelSync=false pod-security.kubernetes.io/enforce=privileged`.
+3. Deploy a privileged pod:
+[source,yaml]
+----
+apiVersion: v1
+kind: Pod
+metadata:
+  name: privileged-pod
+  namespace: privileged-lab
+spec:
+  containers:
+  - name: busybox
+    image: busybox
+    command: ["sleep", "3600"]
+    securityContext:
+      privileged: true
+----
+4. Apply and verify: `oc get pod -n privileged-lab`.
+5. Check SELinux context: `oc exec -it privileged-pod -n privileged-lab -- ps -Z`.
+6. Discuss implications: Privileged pods bypass some SELinux restrictions, requiring careful policy design.
+
+*Expected Outcome*: Pod runs with elevated privileges, with SELinux context reflecting reduced confinement.

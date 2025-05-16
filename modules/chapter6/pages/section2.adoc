@@ -1,0 +1,30 @@
+== Practical Application in OpenShift 4.x
+
+In OpenShift 4.x, SELinux enhances container security by enforcing type-based policies and MCS labels, ensuring containers operate within defined boundaries. Unlike RHEL, where policies are system-wide and managed via tools like `semanage` and `audit2allow`, OpenShift uses the SPO to manage SELinux policies at the namespace and workload level. This is particularly valuable in multi-tenant setups, where isolation prevents cross-tenant attacks.
+
+The SPO, installed by default in OpenShift 4.x, supports only RHCOS worker nodes on `x86_64` architecture. It introduces the `SelinuxProfile` custom resource for defining policies, which can be bound to pods or deployments via `ProfileBinding`. For example, a policy for an HTTP server might look like:
+
+[source,yaml]
+----
+apiVersion: security-profiles-operator.x-k8s.io/v1alpha1
+kind: SelinuxProfile
+metadata:
+  name: nginx-secure
+  namespace: nginx-deploy
+spec:
+  allow:
+    '@self':
+      tcp_socket:
+      - bind
+      - listen
+    http_port_t:
+      tcp_socket:
+      - name_bind
+  inherit:
+  - kind: System
+    name: container
+----
+
+This profile allows the workload's SELinux type (`@self`) to bind and listen on TCP sockets and permits binding to HTTP ports, inheriting the base `container` policy. The `@self` keyword, a departure from RHEL's static type definitions, dynamically refers to the workload's assigned type, simplifying policy reuse.
+
+MCS labels, familiar from RHEL, are automatically assigned to containers in OpenShift to enforce isolation. For example, two pods in the same namespace might have labels like `system_u:system_r:container_t:s0:c1,c2` and `system_u:system_r:container_t:s0:c3,c4`, preventing unauthorized access even if types are identical [2].

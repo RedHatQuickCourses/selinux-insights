@@ -1,0 +1,18 @@
+= SELinux for OpenShift 4.x: A Primer
+:author: Rex Elsea, Rex@RedHat.com
+:date: May 16, 2025
+:icons: font
+:imagesdir: ./images
+:docinfo: shared
+
+[NOTE]
+====
+This training is designed for individuals familiar with SELinux on Red Hat Enterprise Linux (RHEL) who are transitioning to managing SELinux in OpenShift 4.x. It assumes knowledge of SELinux concepts such as types, contexts, and policy enforcement. 
+====
+
+include::section1.adoc[]
+include::section2.adoc[]
+include::section3.adoc[]
+include::section4.adoc[]
+include::section5.adoc[]
+include::section6.adoc[]
